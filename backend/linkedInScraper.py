@@ -29,7 +29,8 @@ class linkedInScraper:
 
     def get_all_linkedin_links(self):
         self.linkedin_scrape(self.url, 0)
-        
+        return self.json_object
+                
     def linkedin_scrape(self, webpage, page_num):
         global count
         response = requests.get(self.url)

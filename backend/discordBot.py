@@ -5,6 +5,7 @@ import json
 from dotenv import load_dotenv
 from discord.ext import commands
 from itertools import islice
+from discord.commands import Option
 import linkedInScraper
 
 load_dotenv('./data/bot_token.env')
@@ -27,18 +28,20 @@ async def on_ready():
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
 
-@bot.command(name='links')
-async def print_links(ctx, number_of_entries = 1, job_query = "Software Engineer"):
-    linkedInScraper.linkedInScraper(job_query, number_of_entries).get_all_linkedin_links()
-    print(job_query)
-    with open('./data/jobs.json', encoding = 'utf8') as json_file:
-        data = json.load(json_file)
-        for row in data: 
-            msg = await ctx.send(embed=create_embed(row, "Pending"))
-            checkM = "✅"
-            redX = "❌"
-            await msg.add_reaction(checkM)
-            await msg.add_reaction(redX)
+@bot.slash_command(guild_ids = [809512248510906408], description = "Get Links of Role")
+async def links(ctx, 
+    job_query: Option(str, "Enter the Job Title", default = "Software Engineer", required = False),
+    number_of_entries: Option(int, "Enter the Number of Entries", min_value = 0, max_value = 25, default = 10, required = False)
+    ):
+
+    json_object = linkedInScraper.linkedInScraper(job_query, number_of_entries).get_all_linkedin_links()
+    # print(job_query)
+    for row in json_object: 
+        msg = await ctx.send(embed=create_embed(row, "Pending"))
+        checkM = "✅"
+        redX = "❌"
+        await msg.add_reaction(checkM)
+        await msg.add_reaction(redX)
 
 def create_embed(row, status):
     embed = discord.Embed(title = row['Company'], url=row['Link'], description=row['Title'], color=0x0000FF)
