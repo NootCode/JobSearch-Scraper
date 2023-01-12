@@ -1,6 +1,7 @@
 import os
 import csv
 import discord
+import json
 from dotenv import load_dotenv
 from discord.ext import commands
 from itertools import islice
@@ -29,9 +30,10 @@ async def on_ready():
 @bot.command(name='links')
 async def print_links(ctx, number_of_entries = 1, job_query = "Software Engineer"):
     linkedInScraper.linkedInScraper(job_query, number_of_entries).get_all_linkedin_links()
-    with open('./data/linkedin-jobs.csv', encoding = 'utf8') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader: # first 10 only
+    print(job_query)
+    with open('./data/jobs.json', encoding = 'utf8') as json_file:
+        data = json.load(json_file)
+        for row in data: 
             msg = await ctx.send(embed=create_embed(row, "Pending"))
             checkM = "✅"
             redX = "❌"

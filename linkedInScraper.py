@@ -16,20 +16,18 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import json
 
 class linkedInScraper:
     def __init__(self, job_query, number_of_entries):
         # self.location = location
         self.job_query = job_query
         self.number_of_entries = number_of_entries
-        self.file = open('.\data\linkedin-jobs.csv', 'w', encoding='utf8', newline='')
-        self.fieldnames = ['ID', 'Source', 'Title', 'Company', 'Location', 'Link']
-        self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames)
         self.url = self.generate_url()
         self.job_counter = 0
+        self.json_object = []
 
     def get_all_linkedin_links(self):
-        self.writer.writeheader()
         self.linkedin_scrape(self.url, 0)
         
     def linkedin_scrape(self, webpage, page_num):
@@ -40,6 +38,7 @@ class linkedInScraper:
         response = requests.get(str(next_page))
 
         jobs = soup.find_all('div', class_='base-card relative w-full hover:no-underline focus:no-underline base-card--link base-search-card base-search-card--link job-search-card')
+
         for job in jobs:
             # Grab all relevant information from job listing
             job_title = job.find('h3', class_= 'base-search-card__title').text.strip()
@@ -47,27 +46,38 @@ class linkedInScraper:
             job_location = job.find('span', class_="job-search-card__location").text.strip()
             job_link = job.find('a', class_= 'base-card__full-link')['href']
 
-            # Write out to csv file
-            self.writer.writerow({
+            # Add to JSON object
+            item = {
                 'ID' : self.job_counter,
                 'Source' : 'LinkedIn',
                 'Title': job_title, 
                 'Company': job_company, 
                 'Location': job_location, 
-                'Link': job_link})
-            self.job_counter += 1
+                'Link': job_link}
+            self.job_counter+=1
+            
+            self.json_object.append(item)
 
             if self.job_counter >= self.number_of_entries:
-                self.file.close()
+                self.quit_out()
                 return
 
         if page_num < 25 + self.number_of_entries:
             page_num = page_num + 25
             self.linkedin_scrape(self.url, page_num)
         else:
-            self.file.close()
+           self.quit_out()
+
+    def quit_out(self):
+        # print(self.json_object)
+        with open ("data/jobs.json", "w",encoding='utf-8') as outfile:
+            json.dump(self.json_object, outfile, indent=4)
+
+        outfile.close()
 
     def generate_url(self):
         replaced_job_title = self.job_query.replace(" ", "%20")
-        url = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=" + replaced_job_title + "&location=United%20States&geoId=103644278&trk=public_jobs_jobs-search-bar_search-submit&position=1&pageNum=0"
+        url ="https://www.linkedin.com/jobs/search?keywords=" + replaced_job_title + "&location=Arcadia%2C%20California%2C%20United%20States&geoId=107117755&trk=public_jobs_jobs-search-bar_search-submit&position=1&pageNum=0"
         return url
+    
+# linkedInScraper("Entry Level Civil Engineer", 100).get_all_linkedin_links()
